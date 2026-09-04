@@ -100,6 +100,12 @@ struct ChannelsColdFailureTests {
                 }
                 #expect(!after.labels.contains { $0.contains(message) })
                 await acquisitionGate.open()
+                // A replacement acquisition can show progress after retiring the old error.
+                // Wait for its retry control to render before performing the user action.
+                let actionable = try await Self.waitForContent(hosting) { labels in
+                    labels.contains(retryLabel)
+                }
+                try #require(actionable.actions[retryLabel] == true)
                 try await Self.press(retryLabel, in: hosting)
                 let replacementMessage = "Synthetic Gateway B unavailable"
                 let replacement = try await Self.waitForContent(hosting) { labels in
